@@ -1,0 +1,10 @@
+build/
+out/
+DerivedData/
+*.xcodeproj/
+Sources/Info.plist
+Sources/Bridge/libretro.h
+*.gba
+*.sav
+*.ipa
+.DS_Store

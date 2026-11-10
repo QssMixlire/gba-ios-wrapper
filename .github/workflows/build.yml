@@ -1,0 +1,57 @@
+name: Compilar IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar ferramentas
+        run: |
+          brew install xcodegen
+          which cmake || brew install cmake
+
+      - name: Compilar o nucleo mGBA para iOS
+        run: bash scripts/build_mgba.sh
+
+      - name: Gerar o projeto Xcode
+        run: xcodegen generate
+
+      - name: Compilar o app (sem assinatura)
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild -project GBAWrap.xcodeproj -scheme GBAWrap \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build/xcodebuild.log | tail -n 80
+
+      - name: Empacotar o IPA
+        run: |
+          mkdir -p out/Payload
+          cp -R build/dd/Build/Products/Release-iphoneos/GBAWrap.app out/Payload/
+          cd out && zip -qry GBAWrap.ipa Payload
+          ls -la GBAWrap.ipa
+
+      - name: Guardar o IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GBAWrap-ipa
+          path: out/GBAWrap.ipa
+          if-no-files-found: error
+
+      - name: Guardar o log do xcodebuild
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: build/xcodebuild.log
+          if-no-files-found: ignore

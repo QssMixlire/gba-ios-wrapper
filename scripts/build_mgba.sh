@@ -18,6 +18,11 @@ cp "$WORK/mgba-src/src/platform/libretro/libretro.h" "$ROOT/Sources/Bridge/libre
 sed -i '' 's/add_library(${BINARY_NAME}_libretro SHARED/add_library(${BINARY_NAME}_libretro STATIC/' "$WORK/mgba-src/CMakeLists.txt"
 grep -n "_libretro STATIC" "$WORK/mgba-src/CMakeLists.txt"
 
+# Com try_compile estatico (necessario para iOS) toda checagem de funcao "passa". O popcount32
+# nao existe na libc: o mGBA tem uma versao propria, que so e usada se esse teste falhar.
+sed -i '' '/find_function(popcount32)/d' "$WORK/mgba-src/CMakeLists.txt"
+! grep -n "find_function(popcount32)" "$WORK/mgba-src/CMakeLists.txt"
+
 rm -rf "$WORK/mgba-cmake"
 cmake -S "$WORK/mgba-src" -B "$WORK/mgba-cmake" \
   -DCMAKE_SYSTEM_NAME=iOS \
